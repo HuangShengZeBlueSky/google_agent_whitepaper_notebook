@@ -1,153 +1,102 @@
-Deep Dive into Google's AI Agent Architecture
-Google AI Agent 白皮书深度技术拆解
-📖 Introduction / 简介
-This repository contains a comprehensive technical deconstruction and critical analysis of the 5-part AI Agent Whitepaper series released by Google (November 2025).
+# Google AI Agent Whitepapers: 深度技术拆解与架构分析
 
-Unlike simple summaries, these notes focus on the Engineering Perspective—treating LLM-based Agents not just as models, but as complex software systems with state management, I/O interfaces, and non-deterministic control flows.
+![Status](https://img.shields.io/badge/Status-Completed-success)
+![Focus](https://img.shields.io/badge/Focus-System%20Architecture-blue)
+![Domain](https://img.shields.io/badge/Domain-Generative%20AI%20%26%20Agents-blueviolet)
+![Source](https://img.shields.io/badge/Source-Google%20DeepMind%20%2F%20Cloud-red)
 
-本仓库包含对 Google 发布（2025年11月）的 AI Agent 五部曲白皮书的深度技术拆解与批判性分析。
+> **关于本项目**
+> 
+> 本仓库包含对 Google 于 2025 年 11 月发布的 **AI Agent 五部曲白皮书** 的深度技术拆解与批判性分析笔记。
+> 
+> 不同于市面上常见的“摘要生成”，本项目采用 **系统工程 (System Engineering)** 视角，将基于大语言模型 (LLM) 的智能体视为具备**状态管理**、**I/O 接口**、**非确定性控制流**与**社会化协作能力**的复杂分布式软件系统。笔记内容面向 AI 研究员、系统架构师及高校研究生。
 
-不同于简单的摘要，本笔记采用工程视角——将基于 LLM 的智能体视为具备状态管理、I/O 接口和非确定性控制流的复杂软件系统。
+---
 
-📂 Content Structure / 内容结构
-The analysis is divided into 5 core modules, corresponding to the original whitepapers. 分析分为 5 个核心模块，对应原始白皮书的章节。
+## 📚 核心模块导航 (Core Modules)
 
-1. Introduction to Agents & Architectures
-Defining the Anatomy of an Agent System.
+本系列分析严格遵循原白皮书逻辑，将 Agent 架构解构为五个核心维度：
 
-Core Loop: The "Think, Act, Observe" cycle.
+| 序号 | 模块名称 | 核心议题 | 关键词 |
+| :--- | :--- | :--- | :--- |
+| **01** | [**架构原理与分级体系**](./01_Architecture_Principles.md) | **大脑与神经系统** | `Think-Act-Observe Loop`, `Level 0-4`, `Co-Scientist`, `Orchestration` |
+| **02** | [**工具互操作性与 MCP 协议**](./02_Tools_and_MCP.md) | **通用的手与接口** | `Model Context Protocol`, `JSON-RPC`, `Sampling`, `Confused Deputy` |
+| **03** | [**上下文工程与记忆机制**](./03_Context_and_Memory.md) | **状态管理与存储** | `Context Engineering`, `Vector DB`, `Session vs Persistence`, `Context Caching` |
+| **04** | [**质量评估与 GenAIOps**](./04_Quality_and_Ops.md) | **测试与免疫系统** | `LLM-as-a-Judge`, `Golden Dataset`, `Faithfulness`, `Evaluation Driven Development` |
+| **05** | [**生产部署与 A2A 协作**](./05_Production_and_A2A.md) | **社会化与互联** | `Agent-to-Agent Protocol`, `Discovery`, `Identity (SPIFFE)`, `Feedback Flywheel` |
 
-Taxonomy: From Level 0 (Reasoning) to Level 4 (Self-Evolving).
+---
 
-Components: Model (Brain), Tools (Hands), Orchestration (Nervous System).
+## 🔍 深度内容概览 (Deep Dive)
 
-Case Study: Technical breakdown of Google Co-Scientist and AlphaEvolve.
+### 🧠 1. 架构原理 (Architecture)
+> *引用来源: Introduction to Agents*
 
-定义 Agent 系统的解剖学结构。
+我们将 Agent 定义为一个在离散时间步 $t$ 上运行的决策系统，而非简单的问答机器人。
+* **核心循环**: 解析了 **"Think (规划) → Act (工具调用) → Observe (环境反馈)"** 的无限状态机。
+* **能力分级**: 建立了类似于自动驾驶的 L0-L4 标准：
+    * **L2 (Strategic)**: 具备上下文规划能力（Context Engineering）。
+    * **L3 (Collaborative)**: 多智能体分工协作（Multi-Agent Systems）。
+    * **L4 (Self-Evolving)**: 能够编写代码扩展自身工具库（如 AlphaEvolve）。
+* **案例拆解**: 详细分析了 **Google Co-Scientist** 如何通过“生成者-反思者-排序者”的对抗生成架构来实现科学发现。
 
-核心循环：感知-思考-行动-观察（Think-Act-Observe）闭环。
+### 🛠️ 2. 工具与 MCP 协议 (Tools & MCP)
+> *引用来源: Agent Tools & Interoperability with MCP*
 
-分级体系：从 Level 0（纯推理）到 Level 4（自我进化）。
+解决了 "N 个模型 × M 个工具" 的集成灾难，定义了 AI 时代的 TCP/IP 协议。
+* **MCP 架构**: 采用 **Client-Host-Server** 拓扑，基于 JSON-RPC 2.0 实现标准化通信。
+* **控制反转 (IoC)**: 深入剖析 **Sampling (采样)** 机制——允许工具端反向请求 Agent 的大脑进行推理，打破了传统的单向调用链。
+* **安全边界**: 重点分析了 **"Confused Deputy" (糊涂代理人)** 攻击与 **工具遮蔽 (Tool Shadowing)** 风险，并提出了基于 Capabilities 协商的防御策略。
 
-组件架构：模型（大脑）、工具（手）、编排层（神经系统）。
+### 💾 3. 上下文与记忆 (Context & Memory)
+> *引用来源: Context Engineering: Sessions & Memory*
 
-案例研究：Google Co-Scientist 与 AlphaEvolve 的技术拆解。
+处理 LLM 无状态特性与连续任务需求之间的矛盾。
+* **上下文解剖**: $C_{total} = C_{system} + C_{examples} + C_{memory} + C_{session}$。
+* **记忆二分法**: 
+    * **Session (短期)**: 滑动窗口机制，用于维持多轮对话连贯性。
+    * **Persistence (长期)**: 基于向量数据库 (Vector DB) 的语义检索与事实存储。
+* **工程优化**: 探讨了 **Context Caching** (上下文缓存) 技术，用于降低首字延迟 (TTFT) 和推理成本。
 
-2. Tools & Interoperability (MCP)
-Standardizing the Interface between AI and the Digital World.
+### ⚖️ 4. 质量与运维 (Quality & GenAIOps)
+> *引用来源: Agent Quality*
 
-Model Context Protocol (MCP): A JSON-RPC 2.0 based Client-Host-Server architecture.
+将软件测试方法论迁移至概率性系统，建立 **GenAIOps** 标准。
+* **评估驱动开发 (EDD)**: 确立了在开发前构建 "Golden Dataset" 的原则。
+* **LLM-as-a-Judge**: 解决了语义一致性无法通过 `assert` 验证的难题，利用高智商模型评估 Agent 的执行轨迹 (Trace)。
+* **指标体系**: 区分 **确定性指标** (JSON 合法性、代码通过率) 与 **随机性指标** (忠实度 Faithfulness、相关性 Relevance)。
 
-Security: Analysis of "Confused Deputy" attacks, Dynamic Capability Injection, and Tool Shadowing.
+### 🌐 5. 生产与互联 (Production & A2A)
+> *引用来源: Prototype to Production*
 
-Inversion of Control: Deep dive into Sampling capabilities (Server calling Client).
+构建 "Internet of Agents"，解决孤岛效应。
+* **A2A 协议**: 定义了 Agent 之间的 **Discovery (发现)**、**Handshake (握手)** 与 **Async Task (异步任务)** 标准。
+* **身份与信任**: 集成 SPIFFE/mTLS 体系，防止恶意 Agent 欺诈，实现委托授权。
+* **数据飞轮**: 构建从 `Implicit Feedback` 到 `Fine-tuning` 的自动化闭环，使 Agent 在生产环境中持续自我进化。
 
-Engineering: Solving the "N × M" integration problem.
+---
 
-标准化 AI 与数字世界的接口。
+## 🔬 分析框架 (Methodology)
 
-模型上下文协议 (MCP)：基于 JSON-RPC 2.0 的 Client-Host-Server 架构。
+本笔记在拆解每一份白皮书时，均严格遵循以下**技术分析框架**：
 
-安全性分析：“糊涂代理人（Confused Deputy）”攻击、动态能力注入与工具遮蔽。
+1.  **Core Contribution (核心贡献)**: 该模块解决了什么具体的工程痛点？（如：幻觉、死循环、集成复杂度）
+2.  **System Architecture (系统架构)**: 定义输入空间、处理逻辑（状态机/数学原理）与输出副作用。
+3.  **Engineering View (工程视角)**: 剖析落地难点，如延迟优化、成本控制、隐私合规及分布式调试。
+4.  **Critical Thinking (批判性思考)**: 针对架构局限性的反思（如：A2A 协议的死锁检测、Prompt Injection 的防御极限）。
 
-控制反转：深入解析 Sampling 机制（服务端反向调用客户端）。
+---
 
-工程化：解决 "N × M" 集成灾难。
+## 🚀 适用人群
 
-3. Context Engineering & Memory
-Managing State in a Stateless Environment.
+* **AI 研究员**: 寻找多智能体协作 (MAS) 与自我进化系统的理论支撑。
+* **后端工程师**: 需要了解如何构建高并发、有状态的 Agent 后端服务。
+* **产品经理**: 需要理解 Agent 的能力边界与质量评估标准。
 
-Context Layering: System Instructions, Few-Shot Examples, Grounding Data, Session History.
+---
 
-Memory Architecture: Distinction between Session (Short-term/Sliding Window) and Persistence (Long-term/Vector DB).
+## 📜 免责声明
 
-Optimization: Strategies for Context Caching to reduce TTFT (Time To First Token) and cost.
+本仓库为个人学习笔记与技术解读，旨在促进学术交流。内容基于 Google 公开白皮书整理，非 Google 官方文档。文中引用的图表、概念及原始定义归原作者所有。
 
-在无状态环境中管理状态。
-
-上下文分层：系统指令、Few-Shot 示例、Grounding 数据、会话历史。
-
-记忆架构：会话（短期/滑动窗口）与持久化（长期/向量库）的工程边界。
-
-优化策略：上下文缓存（Context Caching）策略以降低首 Token 延迟与成本。
-
-4. Agent Quality & GenAIOps
-Testing the Non-Deterministic.
-
-GenAIOps: Moving from MLOps to Agent Ops.
-
-LLM-as-a-Judge: Automated evaluation pipelines using "Golden Datasets".
-
-Metrics: Deterministic (Code/JSON validity) vs. Stochastic (Faithfulness, Relevance).
-
-Process: Evaluation Driven Development (EDD).
-
-对“非确定性”进行测试。
-
-GenAIOps：从 MLOps 到 Agent Ops 的范式转移。
-
-LLM即裁判：基于“黄金数据集”的自动化评估流水线。
-
-指标体系：确定性指标（代码/JSON 合法性）vs 概率性指标（忠实度、相关性）。
-
-开发流程：评估驱动开发（EDD）。
-
-5. Prototype to Production (A2A)
-Building the Internet of Agents.
-
-Lifecycle: Design, Develop, Evaluate, Deploy, Monitor, Refine.
-
-A2A Protocol: Discovery, Handshake, and Asynchronous Task Execution between agents.
-
-Identity & Trust: SPIFFE/mTLS integration and Delegated Authorization.
-
-Feedback Loops: Building data flywheels for continuous model fine-tuning.
-
-构建“智能体互联网”。
-
-全生命周期：设计、开发、评估、部署、监控、迭代。
-
-A2A 协议：智能体之间的发现、握手与异步任务执行。
-
-身份与信任：SPIFFE/mTLS 集成与委托授权机制。
-
-反馈闭环：构建用于模型持续微调（Fine-tuning）的数据飞轮。
-
-🧠 Key Analysis Framework / 分析框架
-In each section, I adhere to the following framework to ensure technical depth: 在每个章节中，我遵循以下框架以确保技术深度：
-
-Core Contribution: What specific problem (e.g., Hallucination, Infinite Loops) does this solve?
-
-System Architecture: Defining Inputs, Processing Logic (Math/State Machines), and Outputs.
-
-Key Algorithms: Pseudo-code or Latex formulations of core mechanisms.
-
-Engineering Challenges: Hard truths about implementation (Latency, Cost, Security).
-
-🚀 Usage / 使用指南
-These notes are intended for AI researchers, graduate students, and system architects. They assume familiarity with:
-
-Transformer basics & LLMs
-
-Distributed Systems (RPC, APIs)
-
-Vector Search & RAG
-
-Software Engineering principles
-
-本笔记面向 AI 研究员、研究生及系统架构师。阅读前假设你已熟悉：
-
-Transformer 基础与 LLM 原理
-
-分布式系统（RPC, API）
-
-向量搜索与 RAG
-
-软件工程原则
-
-📜 Disclaimer / 免责声明
-This repository contains personal notes and interpretations of Google's whitepapers. It is not an official Google product. All diagrams and concepts cited are attributed to the original authors.
-
-本仓库包含对 Google 白皮书的个人笔记与解读，非 Google 官方产品。所有引用的图表与概念归原作者所有。
-
-Created by a Tsinghua University AI Graduate Student. 专注代码、数学原理与系统架构。
+*Created by an AI Architecture Enthusiast.*
